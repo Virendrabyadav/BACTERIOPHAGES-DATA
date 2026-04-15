@@ -7,42 +7,34 @@ def request_phage(req: Request):
     results = []
 
     for p in phages:
-        score = 0
+        try:
+            host = str(p.host_bacteria or "").lower()
+            source = str(p.source or "").lower()
+            req_bacteria = str(req.bacteria or "").lower()
 
-        host = (p.host_bacteria or "").lower()
-        source = (p.source or "").lower()
-        req_bacteria = (req.bacteria or "").lower()
+            score = 0
 
-        # Exact match
-        if host == req_bacteria:
-            score += 50
+            if host == req_bacteria:
+                score += 50
+            elif req_bacteria in host:
+                score += 30
 
-        # Partial match
-        elif req_bacteria in host:
-            score += 30
+            if p.lytic:
+                score += 20
 
-        # Lytic advantage
-        if p.lytic:
-            score += 20
+            if "lab" in source:
+                score += 10
 
-        # Source preference
-        if "lab" in source:
-            score += 10
+            results.append({
+                "name": p.name,
+                "host_bacteria": p.host_bacteria,
+                "score": score
+            })
 
-        results.append({
-            "name": p.name,
-            "host_bacteria": p.host_bacteria,
-            "lab": p.lab,
-            "score": score
-        })
+        except Exception as e:
+            # Skip bad data
+            continue
 
     results = sorted(results, key=lambda x: x["score"], reverse=True)
 
-    return {
-        "request": {
-            "clinician": req.clinician,
-            "bacteria": req.bacteria,
-            "urgency": req.urgency
-        },
-        "ranked_matches": results
-    }
+    return {"ranked_matches": results}
