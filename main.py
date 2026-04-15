@@ -43,6 +43,42 @@ def list_phages():
 
 @app.post("/request_phage")
 def request_phage(req: Request):
+    db = SessionLocal()
+    phages = db.query(PhageDB).all()
+    db.close()
+
+    results = []
+
+    for p in phages:
+        score = 0
+
+        # Exact match
+        if p.host_bacteria.lower() == req.bacteria.lower():
+            score += 50
+
+        # Partial match
+        elif req.bacteria.lower() in p.host_bacteria.lower():
+            score += 30
+
+        # Lytic advantage
+        if p.lytic:
+            score += 20
+
+        # Source preference
+        if "lab" in p.source.lower():
+            score += 10
+
+        results.append({
+            "name": p.name,
+            "host_bacteria": p.host_bacteria,
+            "lab": p.lab,
+            "score": score
+        })
+
+    # Sort by score (highest first)
+    results = sorted(results, key=lambda x: x["score"], reverse=True)
+
+    return {"request": req, "ranked_matches": results}
     matched = [p for p in phages if p.host_bacteria.lower() == req.bacteria.lower()]
     return {"request": req, "matches": matched}
 # ---------------- USER SYSTEM ----------------
