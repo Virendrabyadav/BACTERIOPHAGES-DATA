@@ -45,3 +45,23 @@ def list_phages():
 def request_phage(req: Request):
     matched = [p for p in phages if p.host_bacteria.lower() == req.bacteria.lower()]
     return {"request": req, "matches": matched}
+# ---------------- USER SYSTEM ----------------
+
+users = []
+
+class User(BaseModel):
+    username: str
+    password: str
+    role: str   # clinician or lab
+
+@app.post("/register")
+def register(user: User):
+    users.append(user)
+    return {"message": "User registered"}
+
+@app.post("/login")
+def login(user: User):
+    for u in users:
+        if u.username == user.username and u.password == user.password:
+            return {"message": "Login successful", "role": u.role}
+    return {"message": "Invalid credentials"}
