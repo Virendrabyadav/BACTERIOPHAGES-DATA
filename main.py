@@ -130,3 +130,16 @@ def login(user: User):
         return {"message": "Login successful", "role": found.role}
 
     return {"message": "Invalid credentials"}
+@app.delete("/delete_phage/{phage_id}")
+def delete_phage(phage_id: int):
+    db = SessionLocal()
+    phage = db.query(PhageDB).filter(PhageDB.id == phage_id).first()
+
+    if phage:
+        db.delete(phage)
+        db.commit()
+        db.close()
+        return {"message": "Deleted"}
+    
+    db.close()
+    return {"message": "Not found"}
