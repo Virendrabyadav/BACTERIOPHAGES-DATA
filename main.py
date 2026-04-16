@@ -93,3 +93,40 @@ def request_phage(req: Request):
     results = sorted(results, key=lambda x: x["score"], reverse=True)
 
     return {"ranked_matches": results}
+# ---------- USER SYSTEM ----------
+
+class UserDB(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True)
+    username = Column(String)
+    password = Column(String)
+    role = Column(String)
+
+Base.metadata.create_all(bind=engine)
+
+class User(BaseModel):
+    username: str
+    password: str
+    role: str
+
+@app.post("/register")
+def register(user: User):
+    db = SessionLocal()
+    db.add(UserDB(**user.dict()))
+    db.commit()
+    db.close()
+    return {"message": "User registered"}
+
+@app.post("/login")
+def login(user: User):
+    db = SessionLocal()
+    found = db.query(UserDB).filter_by(
+        username=user.username,
+        password=user.password
+    ).first()
+    db.close()
+
+    if found:
+        return {"message": "Login successful", "role": found.role}
+
+    return {"message": "Invalid credentials"}
